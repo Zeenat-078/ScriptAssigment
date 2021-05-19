@@ -26,14 +26,13 @@ document.getElementById('divTag').addEventListener('mousemove', (e) => {
   label.style.left = (e.clientX + 10) + "px";
 });
 
-// MouseUp Event method
 
-function mouseUp(e) {
+document.getElementById('divTag').addEventListener('mouseup', (e) => {
   e.preventDefault();
   if (!(e.target && e.target.id == 'divTag'))
     return
 
-  //--------------------------------------Div Element-------------------------------------
+//--------------------------------------Div Element-------------------------------------
 
   let div = document.createElement('div');
   let divId = Date.now();
@@ -44,32 +43,22 @@ function mouseUp(e) {
   div.style.top = e.clientY + "px";
   div.style.left = e.clientX + "px";
 
-  let X = e.clientX;
-  let Y = e.clientY;
+  //----------------------------------------Label Element---------------------------------
 
-  changeFunc(divId, X, Y);             // calling change method
-  writeData(divId, X, Y);             // calling write method
-}
-
-
-
-function changeFunc(divId, X, Y){
-
- //----------------------------------------Label Element---------------------------------
-
- let demo = document.createElement('label');
- demo.setAttribute('id', `label${divId}`);
- demo.innerText = 'Hello';
- document.getElementById(`div${divId}`).appendChild(demo);
+  let demo = document.createElement('label');
+  // let demoId = Date.now();
+  // console.log("DemoId -> " + demoId);
+  demo.setAttribute('id', `label${divId}`);
+  demo.innerText = 'Hello';
+  document.getElementById(`div${divId}`).appendChild(demo);
 
   clicks.push({
     'text': 'Hello',
-    'x': X,
-    'y': Y,
+    'x': e.clientX,
+    'y': e.clientY,
     'id': divId
   })
- 
- console.log(clicks);
+  console.log(clicks);
 
   //----------------------------------Edit Button----------------------------------------
 
@@ -77,10 +66,11 @@ function changeFunc(divId, X, Y){
   editBtn.setAttribute('type', 'button');
   editBtn.setAttribute('value', "edit");
   editBtn.setAttribute('id', `edit${divId}`);
+  editId = `edit${divId}`;
   editBtn.setAttribute('onclick', `editFunc(${divId}, label${divId}, edit${divId}, cancel${divId}, save${divId})`);
   document.getElementById(`div${divId}`).appendChild(editBtn);
 
-  //------------------------------------Save Button----------------------------------------
+//------------------------------------Save Button----------------------------------------
 
   let saveBtn = document.createElement('button');
   saveBtn.innerHTML = 'save';
@@ -89,7 +79,7 @@ function changeFunc(divId, X, Y){
   document.getElementById(`div${divId}`).appendChild(saveBtn);
   saveBtn.style.display = "none";
 
-  //-------------------------------------Cancel Button----------------------------------------
+//-------------------------------------Cancel Button----------------------------------------
 
   let cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = 'Cancel';
@@ -98,7 +88,7 @@ function changeFunc(divId, X, Y){
   document.getElementById(`div${divId}`).appendChild(cancelBtn);
   cancelBtn.style.display = "none";
 
-  // --------------------------------------Remove Button----------------------------------------
+// --------------------------------------Remove Button----------------------------------------
 
   let removeBtn = document.createElement('button');
   removeBtn.innerHTML = 'remove';
@@ -106,8 +96,9 @@ function changeFunc(divId, X, Y){
   removeId = `remove${divId}`;
   removeBtn.setAttribute('onclick', `removeFunc(${divId} , div${divId})`);
   document.getElementById(`div${divId}`).appendChild(removeBtn);
-   
-}
+
+  writeData(divId);             // calling write method
+  });
 
 //---------------------------------------Edit Function--------------------------------------------------
 
@@ -145,13 +136,15 @@ function editFunc(editId, labelEle, editEle, cancelEle, saveEle) {
     val.text = inputVal;
     console.log(clicks);
 
-    updateData(editId, inputVal);             //calling update method
+    updateData(editId ,inputVal);             //calling update method
   });
+
 
   //-----------------------------------------Cancel Event Occur------------------------------------
 
   cancelEle.addEventListener('click', () => {
     labelEle.innerText = value;
+
     editEle.style.display = "block";
     saveEle.style.display = "none";
     cancelEle.style.display = "none";
@@ -171,82 +164,64 @@ function removeFunc(Id, divEle) {
   divEle.remove();
   console.log(clicks);
 
-  deleteData(Id);             //calling delete method
+  deleteData(Id);
 }
 
 // -----------------------------Write data into Firestore----------------------------
 
-function writeData(Id, X, Y) {
+function writeData(Id){
   let item = document.getElementById(`label${Id}`);
-  firebase.firestore().collection("inputData").doc(`${Id}`).set({
-    name: item.textContent,
-    x: X,
-    y: Y
-  });
-  
+    firebase.firestore().collection("inputData").doc(`${Id}`).set({
+      name : item.textContent
+    });
+getData(Id);
 }
 
 // ------------------------------Read data from Firestore------------------------------
 
-window.onload = function getData() {
-
+function getData(Id){
   firebase.firestore().collection("inputData").get()
-    .then((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        console.log(doc.data());
-        // alert(doc.data());
-        let div = document.createElement('div');
-        div.style.position = "absolute";
-        div.style.top = doc.data().y + "px";
-        div.style.left = doc.data().x + "px";
-        div.innerText = doc.data().name + " (" + doc.data().x + "," + doc.data().y + ")";
-        div.setAttribute('id', `div${doc.id}`)
-        console.log(`${doc.id}`);
-        document.getElementById("divTag").appendChild(div);
-
-        let Id = `${doc.id}`;
-        let X = doc.data().x;
-        let Y = doc.data().y;    
-
-         changeFunc(Id, X, Y);
-      });
+  .then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+            console.log(doc.data());
+            document.getElementById("data").innerHTML = doc.data().name;
+        });
     });
 }
 
 // ------------------------------Update data into firestore------------------------------
 
-function updateData(Id, inputVal) {
+function updateData(Id, inputVal){
   console.log(Id);
   console.log(inputVal);
   firebase.firestore().collection("inputData").doc(`${Id}`).update({
-    name: inputVal
+    name : inputVal
   })
   reRead(Id);
 }
 
 // ------------------------------Reread data from Firestore------------------------------
 
-function reRead(Id) {
+function reRead(Id){
   firebase.firestore().collection("inputData").doc(`${Id}`).get()
-    .then((doc) => {
-      if (doc.exists) {
+  .then((doc) => {
+    if (doc.exists) {
         // console.log("Document data:", doc.data());
         document.getElementById("data").innerHTML = doc.data().name;
-        console.log("Document data:", doc.data());
-      } else {
+         console.log("Document data:", doc.data());
+    } else {
         // doc.data() will be undefined in this case
         console.log("No such document!");
-      }
-    })
-
-}
-
+    }
+  })
+  
+  }
+  
 
 // ------------------------------Delete data from Collection------------------------------
 
-function deleteData(Id) {
+function deleteData(Id){
   console.log(Id);
   firebase.firestore().collection("inputData").doc(`${Id}`).delete();
- }
-
-
+  document.getElementById("data").innerHTML = "";
+}
